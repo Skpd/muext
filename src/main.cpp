@@ -17,7 +17,7 @@ Php::Value mu_decoder_init(Php::Parameters &params)
         //loading keys
         crypt.startup(params[0].stringValue(), params[1].stringValue());
     } catch(std::exception &e) {
-        std::cout << e.what() << std::endl;
+        std::cout << "Unable to load files: " << e.what() << std::endl;
         return false;
     }
 
