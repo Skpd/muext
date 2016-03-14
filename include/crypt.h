@@ -24,9 +24,11 @@ public:
     crypt_t() {}
 
     void startup(const std::string &encFileName, const std::string &decFileName);
-    size_t encrypt(unsigned char *buff, const unsigned char *src, size_t srcSize) const;
+    int encrypt(unsigned char *buff, const unsigned char *src, size_t srcSize) const;
     int decrypt(unsigned char *buff, const unsigned char *src, size_t srcSize) const;
     void extract(unsigned char *buff, size_t buffSize) const;
+    void pack(unsigned char *buff, size_t buffSize) const;
+    void decryptLogin(unsigned char *buff, size_t buffSize) const;
     void cryptLogin(unsigned char *buff, size_t buffSize) const;
 
     bool const& isLoaded() const { return loaded; };

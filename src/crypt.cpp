@@ -62,9 +62,9 @@ void crypt_t::loadKeys(std::string keysFileName, KEYS_TYPE keysType) {
     }
 }
 
-size_t crypt_t::encrypt(unsigned char *buff, const unsigned char *src, size_t srcSize) const {
-    size_t decryptVal = ((srcSize + 7) / 8);
-    size_t encryptSize = (decryptVal + decryptVal * 4) * 2 + decryptVal;
+int crypt_t::encrypt(unsigned char *buff, const unsigned char *src, size_t srcSize) const {
+    int decryptVal = (((int) srcSize + 7) / 8);
+    int encryptSize = (decryptVal + decryptVal * 4) * 2 + decryptVal;
 
     if(buff != 0) {
         size_t srcSize2 = srcSize;
@@ -239,15 +239,29 @@ int crypt_t::decryptBlock(unsigned char *buff, const unsigned char *src) const {
 }
 
 void crypt_t::extract(unsigned char *buff, size_t buffSize) const {
-    size_t end = buff[0] == 0xC1 ? 2 : 3;
+    size_t end = buff[0] == 0xC1 || buff[0] == 0xC3 ? 2 : 3;
 
     for(size_t i = buffSize - 1; i != end; --i) {
-        buff[i] ^= buff[i - 1] ^ c_extractionKeys[(i & sizeof(c_extractionKeys) - 1)];
+        buff[i] ^= buff[i - 1] ^ c_extractionKeys[(i % 32)];
+    }
+}
+
+void crypt_t::pack(unsigned char *buff, size_t buffSize) const {
+    size_t start = buff[0] == 0xC1 || buff[0] == 0xC3 ? 2 : 3;
+
+    for(size_t i = start; i < buffSize; ++i) {
+        buff[i] ^= buff[i - 1] ^ c_extractionKeys[(i % 32)];
+    }
+}
+
+void crypt_t::decryptLogin(unsigned char *buff, size_t buffSize) const {
+    for (int i=0; i<buffSize; i++) {
+        buff[i] = buff[i] ^ c_loginKeys[i % 3];
     }
 }
 
 void crypt_t::cryptLogin(unsigned char *buff, size_t buffSize) const {
-    for (int i=0; i<buffSize; i++) {
+    for (size_t i=buffSize; i--;) {
         buff[i] = buff[i] ^ c_loginKeys[i % 3];
     }
 }
