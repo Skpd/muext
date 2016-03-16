@@ -242,7 +242,7 @@ void crypt_t::extract(unsigned char *buff, size_t buffSize) const {
     size_t end = buff[0] == 0xC1 || buff[0] == 0xC3 ? 2 : 3;
 
     for(size_t i = buffSize - 1; i != end; --i) {
-        buff[i] ^= buff[i - 1] ^ c_extractionKeys[(i % 32)];
+        buff[i] ^= buff[i - 1] ^ c_extractionKeys[i % 32];
     }
 }
 
@@ -250,7 +250,7 @@ void crypt_t::pack(unsigned char *buff, size_t buffSize) const {
     size_t start = buff[0] == 0xC1 || buff[0] == 0xC3 ? 2 : 3;
 
     for(size_t i = start; i < buffSize; ++i) {
-        buff[i] ^= buff[i - 1] ^ c_extractionKeys[(i % 32)];
+        buff[i] ^= buff[i - 1] ^ c_extractionKeys[i % 32];
     }
 }
 

@@ -7,8 +7,6 @@
 
 crypt_t crypt;
 
-static unsigned char s_uSerial = 0;
-
 Php::Value mu_decoder_init(Php::Parameters &params)
 {
     if (params.size() < 2) {
@@ -62,10 +60,13 @@ Php::Value mu_decode_c3(Php::Parameters &params)
         dst[1] = static_cast<unsigned char>(decLength);
     }
 
-    //decrypting login and password for specific packet
-    if (dst[2] == 0xF1 && dst[3] == 0x79) {
+    //do not extract if it is server -> client packet
+    if (params.size() < 5 || (params.size() >= 5 && params[4].boolValue())) {
         crypt.extract(dst, decLength);
+    }
 
+    //decrypting login and password for specific packet
+    if (dst[2] == 0xF1 && dst[3] == 0x01) {
         crypt.decryptLogin(&dst[4], 10);
         crypt.decryptLogin(&dst[14], 10);
     }
@@ -98,18 +99,18 @@ Php::Value mu_encode_c3(Php::Parameters &params)
     size_t length = src[1];
 
     //encrypting login and password for specific packet
-    if ((src[2] == 0xFA && src[3] == 0x01) || (src[2] == 0xF1 && src[3] == 0x00)) {
+    if ((src[2] == 0xF1 && src[3] == 0x01) || (src[2] == 0xF1 && src[3] == 0x00)) {
         crypt.cryptLogin(&src[4], 10);
         crypt.cryptLogin(&src[14], 10);
+    }
 
+    //do not pack if it is server -> client packet
+    if (params.size() >= 5 && params[4].boolValue()) {
         crypt.pack(src, length);
     }
 
-    //make it fuzzy?
-
-    s_uSerial++;
-    src[1] = s_uSerial;
-
+    //WHAT THE HELL IS THAT? don't touch it
+    src[1] = 0;
 
     int encLength = crypt.encrypt(dst + 2, src + 1, length - 1) + 2;
 
@@ -121,6 +122,7 @@ Php::Value mu_encode_c3(Php::Parameters &params)
     dst[0] = code;
     //setting packet length
     dst[1] = static_cast<unsigned char>(encLength);
+    src[1] = static_cast<unsigned char>(length);
 
     if (params.size() == 3) {
         //head code
@@ -142,7 +144,8 @@ PHPCPP_EXPORT void *get_module()
             Php::ByVal("data", Php::Type::String),
             Php::ByRef("class", Php::Type::Numeric),
             Php::ByRef("head", Php::Type::Numeric),
-            Php::ByRef("sub", Php::Type::Numeric)
+            Php::ByRef("sub", Php::Type::Numeric),
+            Php::ByVal("extract", Php::Type::Bool)
     });
 
     extension.add("mu_decoder_init", mu_decoder_init, {
@@ -152,8 +155,10 @@ PHPCPP_EXPORT void *get_module()
 
     extension.add("mu_encode_c3", mu_encode_c3, {
             Php::ByVal("data", Php::Type::String),
-            Php::ByVal("head", Php::Type::Numeric),
-            Php::ByVal("sub", Php::Type::Numeric)
+            Php::ByRef("class", Php::Type::Numeric),
+            Php::ByRef("head", Php::Type::Numeric),
+            Php::ByRef("sub", Php::Type::Numeric),
+            Php::ByVal("pack", Php::Type::Bool)
     });
 
     return extension.module();
