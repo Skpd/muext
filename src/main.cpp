@@ -96,7 +96,16 @@ Php::Value mu_encode_c3(Php::Parameters &params)
     unsigned char* src =(unsigned char*)(params[0].stringValue().c_str());
 
     unsigned char code = src[0];
-    size_t length = src[1];
+    size_t length;
+    int encLength;
+
+    bool isDouble = code == 0xC2 || code == 0xC4;
+
+    if (isDouble) {
+        length = src[1] << 8 | src[2];
+    } else {
+        length = src[1];
+    }
 
     //encrypting login and password for specific packet
     if ((src[2] == 0xF1 && src[3] == 0x01) || (src[2] == 0xF1 && src[3] == 0x00)) {
@@ -110,12 +119,20 @@ Php::Value mu_encode_c3(Php::Parameters &params)
     }
 
     //WHAT THE HELL IS THAT? don't touch it
-    src[1] = 0;
+    src[isDouble ? 2 : 1] = 0;
 
-    int encLength = crypt.encrypt(dst + 2, src + 1, length - 1) + 2;
+    if (isDouble) {
+        encLength = crypt.encrypt(dst + 3, src + 2, length - 2) + 3;
+    } else {
+        encLength = crypt.encrypt(dst + 2, src + 1, length - 1) + 2;
+    }
 
     if (code == 0xC1) {
         code = 0xC3;
+    }
+
+    if (code == 0xC2) {
+        code = 0xC4;
     }
 
     //setting packet class
