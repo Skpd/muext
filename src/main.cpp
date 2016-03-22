@@ -34,7 +34,7 @@ Php::Value mu_decode_c3(Php::Parameters &params)
     const unsigned char* src = reinterpret_cast<const unsigned char*>(params[0].stringValue().c_str());
 
     //decrypting
-    unsigned char dst[512] = {0};
+    unsigned char dst[4096] = {0};
     size_t length, decLength;
     bool isDouble = src[0] == 0xC2 || src[0] == 0xC4;
 
@@ -90,7 +90,7 @@ Php::Value mu_encode_c3(Php::Parameters &params)
     }
 
     //encrypting
-    unsigned char dst[512] = {0};
+    unsigned char dst[4096] = {0};
 
     //converting string to char array
     unsigned char* src =(unsigned char*)(params[0].stringValue().c_str());
@@ -119,7 +119,7 @@ Php::Value mu_encode_c3(Php::Parameters &params)
     }
 
     //WHAT THE HELL IS THAT? don't touch it
-    src[isDouble ? 2 : 1] = 0;
+    src[isDouble ? 2 : 1] = ++crypt.sequenceNumber;
 
     if (isDouble) {
         encLength = crypt.encrypt(dst + 3, src + 2, length - 2) + 3;
@@ -137,9 +137,13 @@ Php::Value mu_encode_c3(Php::Parameters &params)
 
     //setting packet class
     dst[0] = code;
-    //setting packet length
-    dst[1] = static_cast<unsigned char>(encLength);
-    src[1] = static_cast<unsigned char>(length);
+
+    if (isDouble) {
+        dst[1] = static_cast<unsigned char>(encLength >> 8 & 0xFF);
+        dst[2] = static_cast<unsigned char>(encLength & 0xFF);
+    } else {
+        dst[1] = static_cast<unsigned char>(encLength);
+    }
 
     if (params.size() == 3) {
         //head code
@@ -148,7 +152,7 @@ Php::Value mu_encode_c3(Php::Parameters &params)
         params[2] = (uint8_t) dst[3];
     }
 
-    return std::string((const char*)dst, dst[1]);
+    return std::string((const char*)dst, encLength);
 }
 
 extern "C"

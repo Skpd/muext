@@ -8,6 +8,7 @@ void crypt_t::startup(const std::string &encFileName, const std::string &decFile
     this->loadKeys(encFileName, _ENCRYPTION_KEYS);
     this->loadKeys(decFileName, _DECRYPTION_KEYS);
     loaded = true;
+    sequenceNumber = 0;
 }
 
 void crypt_t::loadKeys(std::string keysFileName, KEYS_TYPE keysType) {

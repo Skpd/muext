@@ -32,6 +32,8 @@ public:
     void cryptLogin(unsigned char *buff, size_t buffSize) const;
 
     bool const& isLoaded() const { return loaded; };
+
+    unsigned char sequenceNumber = 0;
 private:
     void loadKeys(std::string keysFileName, KEYS_TYPE keysType);
     void encryptBlock(unsigned char *buff, const unsigned char *src, size_t blockSize) const;
